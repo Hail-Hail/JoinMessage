@@ -1,0 +1,3 @@
+name: Join
+version: ${project.version}
+main: join.message.Message
