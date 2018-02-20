@@ -2,6 +2,8 @@ package join.message.Action;
 
 import join.message.Message;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -43,9 +45,6 @@ public class Crawl implements Listener {
         if (crawl.contains(player)) {
             if (!player.isSneaking()) {
                 setCooltime(player);
-                crawl.remove(player);
-                Plugin.action.remove(player);
-                player.setGliding(false);
                 return;
             }
         }
@@ -111,16 +110,6 @@ public class Crawl implements Listener {
             return;
         }
 
-        if (slide.contains(player)) {
-            if (!player.isSneaking()) {
-                setCooltime(player);
-                slide.remove(player);
-                Plugin.action.remove(player);
-                player.setGliding(false);
-                return;
-            }
-        }
-
         if (!player.isSneaking()) {
             return;
         }
@@ -142,11 +131,40 @@ public class Crawl implements Listener {
             return;
         }
 
-        player.playSound(player.getLocation(), Sound.ENTITY_CREEPER_PRIMED, 5, 1);
         player.setGliding(true);
-        slide.add(player);
+        player.playSound(player.getLocation(), Sound.ENTITY_CREEPER_PRIMED, 5, 1);
+        player.sendMessage("§a§lスライディング");
+
         Plugin.action.add(player);
-        player.sendMessage("§a§l匍匐前進");
+        slide.add(player);
+        Location l = player.getLocation();
+
+        new BukkitRunnable() {
+            public void run() {
+                loop++;
+                if (loop == 13) {
+                    setCooltime(player);
+                    this.cancel();
+                    return;
+                }
+
+                if (player.isSneaking()) {
+                    setCooltime(player);
+                    this.cancel();
+                    return;
+                }
+
+                if (!player.isOnGround()) {
+                    setCooltime(player);
+                    this.cancel();
+                    return;
+                }
+
+                player.setVelocity(l.getDirection().multiply(0.8).setY(0));
+                player.playSound(player.getLocation(), Sound.BLOCK_GRASS_STEP, 6, 1);
+            }private int loop = 0;
+            //4tick間隔で処理を行う
+        }.runTaskTimer(Plugin, 1L, 2L);
     }
 
 
@@ -172,32 +190,12 @@ public class Crawl implements Listener {
     @EventHandler
         public void onActionMove(PlayerMoveEvent e) {
 
-            if (crawl.contains(e.getPlayer())) {
-                Player player = e.getPlayer();
-
-                if (!player.isOnGround()) {
-                    //匍匐クールタイムに突っ込む
-                    setCooltime(player);
-
-                    crawl.remove(player);
-
-                    Plugin.action.remove(player);
-
-                    player.setGliding(false);
-                }
-                return;
-            }
-
-        if (slide.contains(e.getPlayer())) {
+        if (crawl.contains(e.getPlayer())) {
             Player player = e.getPlayer();
 
             if (!player.isOnGround()) {
-                //スライディングクールタイムに突っ込む
+                //匍匐クールタイムに突っ込む
                 setCooltime(player);
-
-                slide.remove(player);
-
-                Plugin.action.remove(player);
 
                 player.setGliding(false);
             }
@@ -209,6 +207,10 @@ public class Crawl implements Listener {
         Plugin.cooltime.add(player);
 
         if (crawl.contains(player)) {
+
+            crawl.remove(player);
+            Plugin.action.remove(player);
+
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -216,11 +218,14 @@ public class Crawl implements Listener {
                     this.cancel();
                 }
                 //1.5秒後にクールタイムリストから外す
-            }.runTaskTimer(Plugin, 15, 0);
-            return;
+            }.runTaskTimer(Plugin, 10, 0L);
         }
 
         if (slide.contains(player)) {
+
+            slide.remove(player);
+            Plugin.action.remove(player);
+
             new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -228,7 +233,7 @@ public class Crawl implements Listener {
                     this.cancel();
                 }
                 //2.5秒後にクールタイムリストから外す
-            }.runTaskTimer(Plugin, 25, 0);
+            }.runTaskTimer(Plugin, 20L, 0L);
         }
     }
 

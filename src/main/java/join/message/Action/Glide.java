@@ -2,12 +2,16 @@ package join.message.Action;
 
 import join.message.Message;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -25,7 +29,7 @@ public class Glide implements Listener {
     List<Player> dive = new ArrayList<>();
 
     @EventHandler
-    public void onDive(PlayerToggleSneakEvent e) {
+    public void onDive(PlayerToggleFlightEvent e) {
 
         Player player = e.getPlayer();
 
@@ -33,14 +37,15 @@ public class Glide implements Listener {
             return;
         }
 
-        if (player.isSneaking()) {
-            return;
-        }
-
         if (dive.contains(player)) {
             setCooltime(player);
             dive.remove(player);
             Plugin.action.remove(player);
+            player.setGliding(false);
+            return;
+        }
+
+        if (!player.isSneaking()) {
             return;
         }
 
@@ -77,10 +82,11 @@ public class Glide implements Listener {
                 e.setCancelled(true);
                 return;
             }
-            if (player.isGliding()) {
+            if (player.isOnGround()) {
                 setCooltime(player);
                 dive.remove(player);
                 Plugin.action.remove(player);
+                player.setGliding(false);
             }
         }
     }
